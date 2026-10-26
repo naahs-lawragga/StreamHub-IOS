@@ -115,16 +115,18 @@ private struct PlayerSurface: UIViewControllerRepresentable {
         let model: PlayerModel
         init(model: PlayerModel) { self.model = model }
         func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
-            model.setPictureInPicture(true)
+            Task { @MainActor in self.model.setPictureInPicture(true) }
         }
         func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
-            model.setPictureInPicture(false)
+            Task { @MainActor in self.model.setPictureInPicture(false) }
         }
         func playerViewController(_ playerViewController: AVPlayerViewController, failedToStartPictureInPictureWithError error: Error) {
-            model.setPictureInPicture(false)
+            Task { @MainActor in self.model.setPictureInPicture(false) }
         }
         func playerViewController(_ playerViewController: AVPlayerViewController, restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void) {
-            completionHandler(playerViewController.viewIfLoaded?.window != nil)
+            Task { @MainActor in
+                completionHandler(playerViewController.viewIfLoaded?.window != nil)
+            }
         }
     }
 }
