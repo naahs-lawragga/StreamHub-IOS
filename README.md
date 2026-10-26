@@ -4,7 +4,7 @@
 
 A native, open-source iOS movie and television discovery app. Explore cinematic artwork, save a watchlist, browse viewing options, and play compatible streams you are authorized to access. Original SwiftUI interface, black surfaces, red accents, and no advertising.
 
-**Development status:** 0.1.0 candidate. An IPA is available only after the macOS workflow succeeds. SideStore, LiveContainer, iPhone 17 ProMotion performance, and multitasking require device testing; compatibility is not certified.
+**Development status:** 0.1.0 candidate. The [first unsigned IPA](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40382193288/artifacts/12677579391) passed its [macOS build and 39 Swift tests](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40382193288) on 2026-10-26. SideStore, LiveContainer, iPhone 17 ProMotion performance, and multitasking require device testing; compatibility is not certified.
 
 ## Features
 
@@ -26,7 +26,9 @@ After a successful **Build unsigned IPA** run, download the `StreamHub-unsigned-
 
 ## Screenshots
 
-Real simulator captures are produced by CI as the `StreamHub-simulator-screenshot` artifact. No screenshot has been claimed until that workflow runs. Captures without a TMDB token show the setup state. Movie artwork is retrieved from TMDB at runtime, not copied into this repository.
+<img src="docs/screenshots/setup.png" width="280" alt="StreamHub running in an iPhone simulator with its TMDB setup prompt and five navigation tabs">
+
+Actual simulator capture from the successful build. No TMDB token was installed; this shows the real setup state. Movie artwork loads from TMDB after configuration. See the [build report](docs/BUILD_REPORT.md) for validation evidence and remaining limitations.
 
 ## Build and test
 
