@@ -38,12 +38,33 @@ jobs:
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
       - name: Select Xcode
         run: bash scripts/select-xcode.sh
+      - name: Restore XcodeGen binary
+        id: xcodegen-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/streamhub-xcodegen
+          key: xcodegen-${{ runner.os }}-${{ runner.arch }}-Xcode26.3-2.42.0-v1
       - name: Install XcodeGen 2.42.0
+        if: steps.xcodegen-cache.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch 2.42.0 https://github.com/yonaskolb/XcodeGen.git "$RUNNER_TEMP/XcodeGen"
           cd "$RUNNER_TEMP/XcodeGen"
           swift build -c release --product xcodegen
-          echo "$RUNNER_TEMP/XcodeGen/.build/release" >> "$GITHUB_PATH"
+          mkdir -p "$RUNNER_TEMP/streamhub-xcodegen"
+          cp .build/release/xcodegen "$RUNNER_TEMP/streamhub-xcodegen/"
+          for bundle in .build/release/*.bundle; do
+            if [ -d "$bundle" ]; then cp -R "$bundle" "$RUNNER_TEMP/streamhub-xcodegen/"; fi
+          done
+      - name: Save XcodeGen before app build
+        if: steps.xcodegen-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/streamhub-xcodegen
+          key: ${{ steps.xcodegen-cache.outputs.cache-primary-key }}
+      - name: Add XcodeGen to PATH
+        run: |
+          "$RUNNER_TEMP/streamhub-xcodegen/xcodegen" --version
+          echo "$RUNNER_TEMP/streamhub-xcodegen" >> "$GITHUB_PATH"
       - name: Validate release tooling
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Build and test release IPA
