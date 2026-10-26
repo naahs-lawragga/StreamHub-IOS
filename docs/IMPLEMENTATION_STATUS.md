@@ -19,6 +19,7 @@ Initial candidate version: **0.1.0**. This is a working implementation candidate
 
 - Swift 6.0.3 Linux compiled the Foundation-only StreamHubCore package.
 - **31 package tests passed**: metadata/network/search/cache/provider handling, persistence, directory parsing, versions/update metadata/dismissal/offline behavior.
+- **6 Python release-tool tests passed**: semantic ordering, publication exclusions, asset identity, checksums, sizes, and HTTPS policy.
 - All iOS app and app-test Swift files passed syntax parsing. This does **not** prove Apple-framework type correctness.
 - Info.plist and asset-catalog JSON parsed successfully.
 - Browser and playback hosted XCTest tests exist; they require the macOS/iOS simulator workflow.
@@ -34,3 +35,11 @@ Initial candidate version: **0.1.0**. This is a working implementation candidate
 - Browser cookies and last URL persist; an arbitrary website's live JavaScript state and back/forward stack are not restored across process termination.
 - Screenshots and performance measurements must come from actual running builds. Artwork in the app loads from TMDB; none has been invented as a screenshot.
 - Stable release, GitHub Pages activation, repository branch/environment protection, and device compatibility certification are separate deployment/validation tasks.
+
+## Repository / build handoff (2026-10-26)
+
+- Public repository created by the owner: https://github.com/naahs-lawragga/StreamHub-IOS
+- The connected GitHub integration rejected both Git push and Git data API writes with HTTP 403. Local commits are prepared; no successful push or Actions run is claimed in this report.
+- Repository creation itself was denied to the connected token; the owner created the repository manually.
+- Publication and build-fix pushes were explicitly authorized. The remaining blocker is GitHub integration access, not another approval request.
+- IPA artifact and hosted source: not yet available. `docs/source.template.json` intentionally contains no app/version entries.
