@@ -1,0 +1,25 @@
+name: Bug report
+description: Report a reproducible StreamHub problem.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: App version and installation method
+      placeholder: 0.1.0, SideStore or LiveContainer version
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and iOS version
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps, expected result, actual result
+      description: Remove tokens, account details, and private playback URLs.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs or screenshots

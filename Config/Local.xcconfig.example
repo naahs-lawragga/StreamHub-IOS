@@ -1,0 +1,5 @@
+// Optional local distribution settings. Never put TMDB tokens in a build setting.
+// Copy to Local.xcconfig and pass xcodebuild -xcconfig Config/Local.xcconfig.
+// The $() protects https:// from xcconfig's comment parser.
+STREAMHUB_SOURCE_URL = https:/$()/YOUR_ACCOUNT.github.io/StreamHub-iOS/source.json
+STREAMHUB_REPOSITORY_URL = https:/$()/github.com/YOUR_ACCOUNT/StreamHub-iOS

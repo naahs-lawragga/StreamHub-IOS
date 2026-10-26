@@ -1,0 +1,50 @@
+name: Build unsigned IPA
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select compatible Xcode
+        run: bash scripts/select-xcode.sh
+      - name: Install XcodeGen 2.42.0
+        run: |
+          git clone --depth 1 --branch 2.42.0 https://github.com/yonaskolb/XcodeGen.git "$RUNNER_TEMP/XcodeGen"
+          cd "$RUNNER_TEMP/XcodeGen"
+          swift build -c release --product xcodegen
+          echo "$RUNNER_TEMP/XcodeGen/.build/release" >> "$GITHUB_PATH"
+      - name: Test, build and package
+        run: bash scripts/build-ios.sh
+      - name: Upload unsigned IPA and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: StreamHub-unsigned-${{ github.sha }}
+          path: |
+            build/StreamHub-unsigned.ipa
+            build/StreamHub-unsigned.ipa.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: StreamHub-test-results
+          path: build/Tests.xcresult
+          if-no-files-found: ignore
+      - name: Upload simulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: StreamHub-simulator-screenshot
+          path: build/screenshots/*.png
+          if-no-files-found: ignore
