@@ -1,14 +1,16 @@
-# StreamHub 0.1.0 — first IPA delivery
+# StreamHub 0.1.1 build and release report
 
-Verified on 2026-10-26. This is the first development candidate, not a claim of 1.0 completion or physical-device certification.
+Verified on 2026-10-26. Version 0.1.1 is published with guided TMDB setup and a live update source. This is an early development release; it does not establish physical-device compatibility or 1.0 readiness.
 
 ## 1. Files created
 
-The repository contains the actual SwiftUI app under `StreamHub/`, the independently testable Swift package under `Core/`, hosted iOS tests under `StreamHubTests/`, XcodeGen `project.yml`, `Config/Info.plist`, original branding and icon catalogs, privacy manifest, GitHub workflows, build/release scripts, and repository documentation/policies. `docs/screenshots/setup.png` is an actual simulator capture. The project is generated with XcodeGen; no placeholder Xcode project or mock app is substituted.
+The repository contains the SwiftUI app under `StreamHub/`, the independently testable Swift package under `Core/`, hosted iOS tests under `StreamHubTests/`, XcodeGen `project.yml`, `Config/Info.plist`, original branding and icon catalogs, privacy manifest, GitHub workflows, build/release scripts, and repository documentation/policies. The Xcode project is generated with XcodeGen. The screenshots are actual simulator captures.
 
 ## 2. Features implemented
 
 Home, Search, Discover, Watchlist, Settings; TMDB catalog/search/details/cast/trailers/TV seasons and episodes; runtime Keychain token configuration; local watchlist and histories; image/metadata caching; optional FMHY directory; regional TMDB/JustWatch provider guide; custom sites and authorized streams; persistent WKWebView browser; AVPlayer controls, source changes, resume, supported PiP/audio/subtitle features; and validated update checking, dismissal, installer preferences and tutorials.
+
+Version 0.1.1 adds a five-step tutorial under **Settings → TMDB connection → Set up TMDB step by step**, including copyable application form details, read access token instructions, and iPhone troubleshooting.
 
 There are no advertising SDKs, payment systems, stream-extraction bypasses, or fabricated website title-availability results. See [implementation status](IMPLEMENTATION_STATUS.md) for details.
 
@@ -16,48 +18,62 @@ There are no advertising SDKs, payment systems, stream-extraction bypasses, or f
 
 Public repository: https://github.com/naahs-lawragga/StreamHub-IOS
 
-Source and compiler fixes were committed and pushed with authorization. The initial connection failure was resolved by installing the Codex GitHub App. Tested app-source commit: `2079344830aa7676e856109770c9aaab44d9098a`. A subsequent documentation-only commit records this evidence without rebuilding unchanged app code.
+Published release: https://github.com/naahs-lawragga/StreamHub-IOS/releases/tag/v0.1.1
+
+The immutable `v0.1.1` app-source tag identifies commit `53d8366`. The successful release workflow ran from commit `7e0d9db`, which fixed the XcodeGen cache by retaining its required SettingPresets alongside the built tool. The release rebuilt the tagged app source without moving the tag or replacing a published IPA.
 
 ## 4. Build status
 
-**PASSED:** Xcode 26.3 on the GitHub-hosted macOS 15 ARM64 runner; simulator test build and Release iPhoneOS build.
+**PASSED:** the 0.1.1 release completed its Xcode 26.3 simulator tests and Release iPhoneOS build on GitHub's macOS 15 runner.
 
-Run: https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40382193288
+- [Release run 40386876850](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40386876850), job `121797393709`.
+- Simulator tests succeeded at **19:33:30 UTC** on 2026-10-26.
+- Device build succeeded at **19:40:52 UTC**; release published at **19:41:01 UTC**.
+- [Pages run 40388969253](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40388969253) passed source validation, deployment, and hosted JSON/artwork checks.
 
-The first two attempts exposed PiP main-actor errors and a browser action type mismatch. Both were fixed before this successful run. Tests were not disabled or bypassed.
+The first 0.1.0 development IPA remains documented by [run 40382193288](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40382193288). The current release was tested independently; no tests were disabled or bypassed.
 
 ## 5. IPA artifact location
 
-Download: https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40382193288/artifacts/12677579391
+[Download the public 0.1.1 IPA](https://github.com/naahs-lawragga/StreamHub-IOS/releases/download/v0.1.1/StreamHub-unsigned.ipa) and its [SHA-256 checksum](https://github.com/naahs-lawragga/StreamHub-IOS/releases/download/v0.1.1/StreamHub-unsigned.ipa.sha256).
 
-- File inside ZIP: `StreamHub-unsigned.ipa`
-- Version: **0.1.0**, build **3**
+- File: `StreamHub-unsigned.ipa`
+- Version: **0.1.1**, build **2**
 - Bundle identifier: **com.streamhub.ios**
 - Minimum iOS: **17.0**
 - Platform: **iPhoneOS**, ARM64 Mach-O executable
-- Size: **1,232,693 bytes**
-- SHA-256: `3ba8ae0f204f8636661a8075acd81424fb25257bb541a38a4b6b8713367f0e80`
-- Artifact retention: until **2026-11-25** under the current 30-day policy
+- Size: **1,303,017 bytes**
+- SHA-256: `80587a9142fd996b3a4a47f09198f89d6fa5b36862b669298c842bbe85425bc6`
+- Separate [release IPA workflow artifact](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40386876850/artifacts/12682107738), retained for 90 days under the workflow policy.
 
-The downloaded IPA's checksum, ZIP integrity, Info.plist identity/platform and Mach-O header were independently checked after CI. This IPA is unsigned; import/sign using a compatible installation tool. See [iPhone installation instructions](INSTALLATION.md).
+The public download's SHA-256, ZIP integrity, Info.plist identity/version/platform/source URL, and Mach-O executable were independently checked after publication. This IPA is unsigned; import or sign it using a compatible installation tool. See [iPhone installation instructions](INSTALLATION.md).
 
 ## 6. IPA source location
 
-**Not published yet.** `docs/source.template.json` intentionally contains no fake release entries. `scripts/generate-source.py` and the disabled-by-default stable release workflow generate a real `source.json` only after publicly downloadable IPA assets pass checksum/size verification. Pages/release environment setup and an approved release tag remain required.
+**LIVE:** https://naahs-lawragga.github.io/StreamHub-IOS/source.json
+
+The source contains the verified 0.1.1 download, build version, size, release notes, checksum, icon, and simulator screenshot. Both the release workflow and the separate Pages workflow validated the public IPA before deployment. The hosted JSON, IPA, icon, and screenshot were downloaded and checked independently after publication.
+
+[Verified source bundle artifact](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40386876850/artifacts/12680728715).
+
+`docs/source.template.json` remains an empty development template and is not the live source.
 
 ## 7. Update system status
 
-Core validation and SwiftUI update screens are implemented and tested. The first development IPA has an empty `STREAMHUB_SOURCE_URL`, so it does not perform automatic checks against an unpublished source. Stable release builds embed the configured Pages URL. This first candidate must be updated manually; no silent installation or Apple credential collection is attempted.
+The published 0.1.1 IPA embeds `https://naahs-lawragga.github.io/StreamHub-IOS/source.json`. Metadata validation, version comparison, and dismissal have automated test coverage; the SwiftUI update screens compile in the tested app. Automatic checks run on launch and activation when the previous check is at least six hours old, with a manual check in **Settings → Updates & installation**. Version 0.1.1 will not advertise itself as newer than an installed 0.1.1 build.
+
+The original 0.1.0 development IPA has an empty `STREAMHUB_SOURCE_URL` and must be updated manually. In-app update behavior and installation still require device validation. No silent installation or Apple credential collection is attempted.
 
 ## 8. Tests completed
 
-- **31 Swift core tests passed on macOS** in CI (also passed on Linux).
-- **8 hosted iOS simulator tests passed**: browser URL policy/bookmarks/history/errors, native invalid-stream handling, provider failure isolation and concurrency limits.
-- **6 release-tool tests passed locally**: source version ordering, missing/draft/prerelease exclusions, asset host/size/checksum and HTTPS policy.
-- Successful simulator launch captured in `docs/screenshots/setup.png`.
-- Test report artifact: https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40382193288/artifacts/12679866256
-- Screenshot artifact: https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40382193288/artifacts/12679851322
+The successful 0.1.1 release run passed:
+
+- **31 Swift core tests:** metadata/network/search/cache/provider handling, persistence, directory parsing, update metadata/version comparison/dismissal/offline behavior.
+- **8 hosted iOS simulator tests:** browser URL policy/bookmarks/history/errors, native invalid-stream handling, provider failure isolation and concurrency limits.
+- **11 Python release-tool tests:** source ordering, publication exclusions, asset identity, public IPA metadata, checksum/size checks, and HTTPS policy.
+- Simulator launch and an actual setup screenshot; [release test evidence and screenshots](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40386876850/artifacts/12682182722).
+- Public IPA and source validation during publication and independently after Pages deployment.
 
 ## 9. Remaining limitations
 
-No physical iPhone 17, SideStore, LiveContainer multitasking/window resizing, hardware PiP, accessibility audit, or ProMotion profiling has been performed. Live TMDB requests require the user's token and were not tested with a real account. Authorized live stream/provider logins and website compatibility need on-device validation. TMDB provider listings are title-level reports, not verified episode/subscription access. No stable release or Pages source has been published. Consult the [compatibility checklist](COMPATIBILITY.md) before claiming device compatibility or 1.0 readiness.
+No physical iPhone 17, SideStore, LiveContainer multitasking/window resizing, hardware PiP, accessibility audit, or ProMotion profiling has been performed. Live TMDB requests require the user's token and were not tested with a real account. Authorized live streams, provider logins, and website compatibility need on-device validation. TMDB provider listings are title-level reports, not verified episode/subscription access. Consult the [compatibility checklist](COMPATIBILITY.md) before claiming device compatibility or 1.0 readiness.
