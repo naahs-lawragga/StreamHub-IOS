@@ -1,0 +1,98 @@
+name: Approved stable release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: stable-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: vars.STREAMHUB_RELEASES_ENABLED == 'true'
+    environment: release
+    runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate approved stable tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import os,re
+          tag=os.environ['RELEASE_TAG']
+          assert re.fullmatch(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', tag), 'Stable semver tag required'
+          with open(os.environ['GITHUB_ENV'],'a') as f:
+              f.write('STREAMHUB_VERSION='+tag[1:]+'\n')
+              owner,repo=os.environ['GITHUB_REPOSITORY'].split('/')
+              f.write(f'STREAMHUB_SOURCE_URL=https://{owner}.github.io/{repo}/source.json\n')
+              f.write(f'STREAMHUB_PAGES_URL=https://{owner}.github.io/{repo}\n')
+          PY
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - name: Select Xcode
+        run: bash scripts/select-xcode.sh
+      - name: Install XcodeGen 2.42.0
+        run: |
+          git clone --depth 1 --branch 2.42.0 https://github.com/yonaskolb/XcodeGen.git "$RUNNER_TEMP/XcodeGen"
+          cd "$RUNNER_TEMP/XcodeGen"
+          swift build -c release --product xcodegen
+          echo "$RUNNER_TEMP/XcodeGen/.build/release" >> "$GITHUB_PATH"
+      - name: Validate release tooling
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Build and test release IPA
+        run: bash scripts/build-ios.sh
+      - name: Publish tested release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" build/StreamHub-unsigned.ipa build/StreamHub-unsigned.ipa.sha256 --verify-tag --draft --generate-notes --title "StreamHub $STREAMHUB_VERSION"
+          gh release edit "$RELEASE_TAG" --draft=false --latest
+      - name: Generate source from verified public release downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/pages/screenshots
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > build/releases.json
+          python3 scripts/generate-source.py --releases build/releases.json --repository "$GITHUB_REPOSITORY" --pages-url "$STREAMHUB_PAGES_URL" --output build/pages/source.json
+          cp docs/branding/icon-1024.png build/pages/icon.png
+          cp build/screenshots/setup.png build/pages/screenshots/setup.png
+          cp docs/branding/social-preview.png build/pages/social-preview.png
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/pages
+      - name: Upload release test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-test-evidence
+          path: |
+            build/Tests.xcresult
+            build/screenshots
+          if-no-files-found: ignore
+  deploy:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy verified IPA source
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify hosted source
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --retry 6 --retry-delay 10 --proto '=https' --tlsv1.2 "${PAGES_URL%/}/source.json" -o source.json
+          python3 -c 'import json; s=json.load(open("source.json")); assert s["apps"][0]["bundleIdentifier"] == "com.streamhub.ios"; assert s["apps"][0]["versions"]'
