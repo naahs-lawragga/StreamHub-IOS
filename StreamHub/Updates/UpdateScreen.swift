@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import StreamHubCore
 
 struct UpdateScreen: View {
@@ -85,6 +86,7 @@ struct UpdateScreen: View {
 struct UpdateSettingsView: View {
     @EnvironmentObject private var updates: UpdateManager
     @AppStorage("installationMethod") private var method = InstallationMethod.ask.rawValue
+    @State private var copiedSource = false
     var body: some View {
         Form {
             Section("Installed") { LabeledContent("Version", value: updates.installedVersion) }
@@ -104,7 +106,14 @@ struct UpdateSettingsView: View {
                 NavigationLink("LiveContainer guide") { UpdateTutorialView(method: .liveContainer) }
             } footer: { Text("Automatic checks run on launch and when you return, at most once every six hours. No background polling or silent installation.") }
             if let url = updates.sourceURL {
-                Section("App source") { ShareLink(item: url) { Label("Share source URL", systemImage: "square.and.arrow.up") }; Text(url.absoluteString).font(.caption).textSelection(.enabled) }
+                Section("App source") {
+                    Button(copiedSource ? "Source URL copied" : "Copy source URL") {
+                        UIPasteboard.general.url = url
+                        copiedSource = true
+                    }
+                    ShareLink(item: url) { Label("Share source URL", systemImage: "square.and.arrow.up") }
+                    Text(url.absoluteString).font(.caption).textSelection(.enabled)
+                }
             }
         }.navigationTitle("Updates")
     }

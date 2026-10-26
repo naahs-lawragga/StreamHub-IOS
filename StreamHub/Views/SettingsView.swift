@@ -89,6 +89,17 @@ struct SettingsView: View {
     private var connection: some View {
         Form {
             Section {
+                NavigationLink { TMDBTutorialView() } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Set up TMDB step by step").font(.headline)
+                            Text("Get your token, complete the form, and connect.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    } icon: { Image(systemName: "book.pages.fill") }
+                }
+            }
+            Section {
                 Label(store.tokenConfigured ? "Token saved in Keychain" : "Connect TMDB to discover titles", systemImage: store.tokenConfigured ? "checkmark.shield" : "key")
                 SecureField("TMDB API Read Access Token", text: $token).textInputAutocapitalization(.never).autocorrectionDisabled()
                 Button("Save token") { store.setToken(token); token = ""; if store.storageError == nil { notice = "TMDB connection updated." } }.disabled(token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

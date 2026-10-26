@@ -7,6 +7,12 @@ nonexistent artifact is ever inserted. URLs are checked over HTTPS before write.
 import argparse
 import hashlib
 import json
+import datetime
+import plistlib
+import tempfile
+import time
+import zipfile
+import urllib.error
 import re
 import urllib.request
 from pathlib import Path
@@ -23,11 +29,78 @@ def https(url):
     return url
 
 
-def read_url(url):
+class HTTPSRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, message, headers, newurl):
+        https(newurl)
+        return super().redirect_request(request, fp, code, message, headers, newurl)
+
+
+OPENER = urllib.request.build_opener(HTTPSRedirectHandler())
+
+
+def open_url(url):
     request = urllib.request.Request(https(url), headers={'User-Agent': 'StreamHub-Source-Generator/1'})
-    with urllib.request.urlopen(request, timeout=30) as response:
-        https(response.url)
-        return response.read()
+    for attempt in range(5):
+        try:
+            response = OPENER.open(request, timeout=60)
+            https(response.url)
+            return response
+        except urllib.error.HTTPError as error:
+            if error.code not in (404, 408, 429, 500, 502, 503, 504) or attempt == 4:
+                raise
+        except urllib.error.URLError:
+            if attempt == 4:
+                raise
+        time.sleep(2 ** attempt)
+    raise RuntimeError('Unreachable retry state')
+
+
+def read_url(url):
+    with open_url(url) as response:
+        data = response.read(16385)
+        if len(data) > 16384:
+            raise ValueError('Checksum asset unexpectedly large')
+        return data
+
+
+def inspect_ipa(file, version):
+    """Confirm source identity and version against the actual downloaded bundle."""
+    file.seek(0)
+    with zipfile.ZipFile(file) as archive:
+        paths = [p for p in archive.infolist() if re.fullmatch(r'Payload/[^/]+\.app/Info\.plist', p.filename)]
+        if len(paths) != 1 or paths[0].file_size > 1024 * 1024:
+            raise ValueError('IPA must contain exactly one main app Info.plist')
+        info = plistlib.loads(archive.read(paths[0]))
+    if info.get('CFBundleIdentifier') != BUNDLE_ID:
+        raise ValueError('Public IPA has an unexpected bundle identifier')
+    if info.get('CFBundleShortVersionString') != version:
+        raise ValueError('Public IPA version does not match its release tag')
+    if info.get('CFBundlePackageType') != 'APPL' or 'iPhoneOS' not in info.get('CFBundleSupportedPlatforms', []):
+        raise ValueError('Public IPA is not a device application')
+    minimum = info.get('MinimumOSVersion', '')
+    if not isinstance(minimum, str) or not re.fullmatch(r'[0-9]+(?:\.[0-9]+){1,2}', minimum):
+        raise ValueError('Public IPA has no valid minimum iOS version')
+    build = info.get('CFBundleVersion', '')
+    if not isinstance(build, str) or not re.fullmatch(r'[0-9]+(?:\.[0-9]+){0,2}', build):
+        raise ValueError('Public IPA has no valid build version')
+    return {'minOSVersion': minimum, 'buildVersion': build}
+
+
+def verify_ipa(url, size, digest, version):
+    if not isinstance(size, int) or isinstance(size, bool) or not 0 < size <= 1024 * 1024 * 1024:
+        raise ValueError('Public IPA size is outside supported limits')
+    with tempfile.TemporaryFile() as file:
+        count, hasher = 0, hashlib.sha256()
+        with open_url(url) as response:
+            while block := response.read(1024 * 1024):
+                count += len(block)
+                if count > size:
+                    raise ValueError('Public IPA exceeds declared size')
+                hasher.update(block)
+                file.write(block)
+        if count != size or hasher.hexdigest() != digest:
+            raise ValueError('Public IPA size or checksum does not match release')
+        return inspect_ipa(file, version)
 
 
 def validate_source(source):
@@ -44,6 +117,7 @@ def validate_source(source):
             assert version['version'] not in seen
             seen.add(version['version'])
             assert isinstance(version['size'], int) and version['size'] > 0
+            assert re.fullmatch(r'[0-9]+(?:\.[0-9]+){0,2}', version['buildVersion'])
             assert re.fullmatch('[0-9a-f]{64}', version['sha256'])
             https(version['downloadURL'])
             https(version['streamhubReleaseURL'])
@@ -65,33 +139,26 @@ def generate(releases, repository, pages_url, verify=True):
             continue  # Other/older releases with no compatible artifacts stay absent.
         if ipa.get('state') != 'uploaded' or ipa.get('size', 0) <= 0:
             raise ValueError('IPA asset was not uploaded successfully')
-        expected_prefix = f'https://github.com/{repository}/releases/download/'
+        expected_prefix = f'https://github.com/{repository}/releases/download/{release["tag_name"]}/'
         for asset in (ipa, checksum):
-            if not https(asset['browser_download_url']).startswith(expected_prefix):
-                raise ValueError('Release asset is outside expected repository')
+            if https(asset['browser_download_url']) != expected_prefix + asset['name']:
+                raise ValueError('Release asset is outside expected repository or tag')
         checksum_text = read_url(checksum['browser_download_url']).decode('ascii') if verify else checksum['test_checksum']
-        digest = checksum_text.split()[0]
-        if not re.fullmatch('[0-9a-f]{64}', digest):
+        parts = checksum_text.split()
+        if not parts or not re.fullmatch('[0-9a-f]{64}', parts[0]):
             raise ValueError('Malformed SHA-256 checksum')
-        if verify:
-            # Stream, don't buffer a potentially large IPA into memory.
-            request = urllib.request.Request(ipa['browser_download_url'], headers={'User-Agent': 'StreamHub-Source-Generator/1'})
-            count, hasher = 0, hashlib.sha256()
-            with urllib.request.urlopen(request, timeout=60) as response:
-                https(response.url)
-                while block := response.read(1024 * 1024):
-                    count += len(block)
-                    hasher.update(block)
-            if count != ipa['size'] or hasher.hexdigest() != digest:
-                raise ValueError('Public IPA size or checksum does not match release')
+        digest = parts[0]
+        version = '.'.join(match.groups())
+        ipa_metadata = verify_ipa(ipa['browser_download_url'], ipa['size'], digest, version) if verify else {'minOSVersion': '17.0', 'buildVersion': '1'}
         date = release.get('published_at')
         if not isinstance(date, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', date):
             raise ValueError('Release has no valid publication date')
+        datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ')
         versions.append({
             'version': '.'.join(match.groups()), 'date': date,
             'localizedDescription': release.get('body') or 'See the GitHub release for changes.',
             'downloadURL': ipa['browser_download_url'], 'size': ipa['size'],
-            'minOSVersion': '17.0', 'sha256': digest,
+            **ipa_metadata, 'sha256': digest,
             'streamhubReleaseURL': f'https://github.com/{repository}/releases/tag/{release["tag_name"]}'
         })
     if not versions:

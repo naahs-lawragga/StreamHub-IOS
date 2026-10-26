@@ -11,12 +11,12 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "0.1.1"
     CURRENT_PROJECT_VERSION: "1"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     CODE_SIGN_STYLE: Automatic
-    STREAMHUB_SOURCE_URL: ""
+    STREAMHUB_SOURCE_URL: "https://naahs-lawragga.github.io/StreamHub-IOS/source.json"
     STREAMHUB_REPOSITORY_URL: "https:/$()/github.com/naahs-lawragga/StreamHub-iOS"
 targets:
   StreamHub:

@@ -17,7 +17,7 @@ struct UpdateTutorialView: View {
     private var steps: [Step] {
         if method == .liveContainer {
             return [
-                Step(title: "Save the new IPA", text: "Open the official release below. Download StreamHub.ipa and save it in Files. Keep a copy of your existing app data before changing its container.", symbol: "arrow.down.doc.fill"),
+                Step(title: "Save the new IPA", text: "Open the official release below. Download StreamHub-unsigned.ipa and save it in Files. Keep a copy of your existing app data before changing its container.", symbol: "arrow.down.doc.fill"),
                 Step(title: "Import in LiveContainer", text: "Open LiveContainer, use the + button, and choose the IPA from Files. Use its existing-app update or replacement option when offered; do not delete your current guest app first.", symbol: "square.and.arrow.down.fill"),
                 Step(title: "Keep the same data container", text: "Select the existing StreamHub data container when LiveContainer offers that choice. Container replacement and signing changes can affect saved data and website sessions. Preservation is not guaranteed across all versions.", symbol: "externaldrive.fill"),
                 Step(title: "Launch and check", text: "Launch StreamHub and check Settings → Updates for the new version. Confirm your watchlist and browser sessions. StreamHub’s LiveContainer and multitasking behavior still requires device testing.", symbol: "play.fill")

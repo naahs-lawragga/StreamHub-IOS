@@ -1,0 +1,67 @@
+name: Publish verified IPA source
+on:
+  workflow_run:
+    workflows: [Approved stable release]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+concurrency:
+  group: streamhub-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified source bundle from successful release run
+        uses: actions/download-artifact@v4
+        with:
+          name: StreamHub-public-source-${{ github.event.workflow_run.run_attempt }}
+          path: public-source
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Validate source before deployment
+        run: |
+          python3 - <<'PY'
+          import importlib.util,json
+          from pathlib import Path
+          spec=importlib.util.spec_from_file_location('source','scripts/generate-source.py')
+          module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+          source=json.loads(Path('public-source/source.json').read_text())
+          module.validate_source(source)
+          assert source['apps'] and source['apps'][0]['versions']
+          for app in source['apps']:
+              for version in app['versions']:
+                  metadata=module.verify_ipa(version['downloadURL'],version['size'],version['sha256'],version['version'])
+                  assert metadata['buildVersion'] == version['buildVersion']
+          assert Path('public-source/icon.png').is_file()
+          assert Path('public-source/screenshots/setup.png').is_file()
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public-source
+      - name: Deploy IPA source
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify hosted source and artwork
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --retry 6 --retry-delay 10 --proto '=https' --tlsv1.2 "${PAGES_URL%/}/source.json" -o hosted-source.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          expected=json.loads(Path('public-source/source.json').read_text())
+          actual=json.loads(Path('hosted-source.json').read_text())
+          assert actual == expected, 'Hosted source differs from the verified release source'
+          PY
+          curl --fail --retry 4 --retry-delay 5 --proto '=https' --tlsv1.2 "${PAGES_URL%/}/icon.png" -o /tmp/icon.png
+          curl --fail --retry 4 --retry-delay 5 --proto '=https' --tlsv1.2 "${PAGES_URL%/}/screenshots/setup.png" -o /tmp/setup.png

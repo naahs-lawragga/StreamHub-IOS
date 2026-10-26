@@ -16,6 +16,6 @@ xcrun simctl install "$SIMULATOR_ID" build/DerivedData/Build/Products/Debug-ipho
 xcrun simctl launch "$SIMULATOR_ID" com.streamhub.ios
 sleep 3
 xcrun simctl io "$SIMULATOR_ID" screenshot build/screenshots/setup.png
-xcodebuild build -project StreamHub.xcodeproj -scheme StreamHub -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO "MARKETING_VERSION=${STREAMHUB_VERSION:-0.1.0}" "CURRENT_PROJECT_VERSION=${GITHUB_RUN_NUMBER:-1}" "STREAMHUB_SOURCE_URL=${STREAMHUB_SOURCE_URL:-}"
+xcodebuild build -project StreamHub.xcodeproj -scheme StreamHub -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO "MARKETING_VERSION=${STREAMHUB_VERSION:-0.1.1}" "CURRENT_PROJECT_VERSION=${GITHUB_RUN_NUMBER:-1}" "STREAMHUB_SOURCE_URL=${STREAMHUB_SOURCE_URL:-https://naahs-lawragga.github.io/StreamHub-IOS/source.json}"
 python3 scripts/package-ipa.py build/DerivedData/Build/Products/Release-iphoneos/StreamHub.app build/StreamHub-unsigned.ipa
 (cd build && shasum -a 256 StreamHub-unsigned.ipa > StreamHub-unsigned.ipa.sha256)
