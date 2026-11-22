@@ -100,14 +100,25 @@ final class CoreTests: XCTestCase {
         catch { XCTAssertTrue(error is CancellationError) }
     }
     func testProviderMetadataIsTitleLevelAndRegionSpecific() async throws {
-        let payload = #"{"results":{"US":{"link":"https://www.themoviedb.org/movie/42/watch?locale=US","flatrate":[{"provider_id":7,"provider_name":"Example","logo_path":"/logo.jpg"}],"buy":[{"provider_id":7,"provider_name":"Example"}]}}}"#
+        let payload = #"{"results":{"US":{"link":"https://www.themoviedb.org/movie/42/watch?locale=US","flatrate":[{"provider_id":7,"provider_name":"Example","logo_path":"/logo.jpg"},{"provider_id":7,"provider_name":"Example","logo_path":"/logo.jpg"}],"buy":[{"provider_id":7,"provider_name":"Example"}]}}}"#
         let transport = StubTransport([HTTPResult(data: Data(payload.utf8), statusCode: 200)])
         let client = TMDBClient(token: "token", transport: transport, cache: MetadataCache(directory: directory()))
         let providers = try await client.watchProviders(for: MediaTitle(id: 42, kind: .movie, title: "Film"), region: "us")
-        XCTAssertEqual(providers.count, 1)
+        XCTAssertEqual(providers.count, 2)
+        XCTAssertEqual(providers.map(\.category), ["Subscription", "Buy"])
         XCTAssertEqual(providers.first?.region, "US")
         XCTAssertEqual(providers.first?.category, "Subscription")
         XCTAssertEqual(providers.first?.url.host, "www.themoviedb.org")
+    }
+    func testTelevisionProvidersPreserveRentalAndSubscriptionCategories() async throws {
+        let payload = #"{"results":{"US":{"link":"https://www.themoviedb.org/tv/42/watch?locale=US","flatrate":[{"provider_id":7,"provider_name":"Example"}],"free":[{"provider_id":7,"provider_name":"Example"}],"rent":[{"provider_id":7,"provider_name":"Example"}],"buy":[{"provider_id":7,"provider_name":"Example"}]}}}"#
+        let transport = StubTransport([HTTPResult(data: Data(payload.utf8), statusCode: 200)])
+        let client = TMDBClient(token: "token", transport: transport, cache: MetadataCache(directory: directory()))
+        let providers = try await client.watchProviders(for: MediaTitle(id: 42, kind: .tv, title: "Show"), region: "US")
+        XCTAssertEqual(providers.map(\.category), ["Subscription", "Free", "Rent", "Buy"])
+        XCTAssertTrue(providers.allSatisfy { $0.url.path == "/tv/42/watch" })
+        let requests = await transport.requests
+        XCTAssertEqual(requests.first?.url?.path, "/3/tv/42/watch/providers")
     }
     func testProviderRejectsUnexpectedDestination() async throws {
         let payload = #"{"results":{"US":{"link":"https://untrusted.example/watch","flatrate":[{"provider_id":7,"provider_name":"Example"}]}}}"#

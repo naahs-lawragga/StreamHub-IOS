@@ -1,13 +1,16 @@
 import SwiftUI
 import UIKit
+import StreamHubCore
 
 struct UpdateTutorialView: View {
     let method: InstallationMethod
     @EnvironmentObject private var updates: UpdateManager
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var step = 0
     @State private var copied = false
+    @State private var openMessage: String?
 
     private struct Step {
         let title: String
@@ -17,10 +20,15 @@ struct UpdateTutorialView: View {
     private var steps: [Step] {
         if method == .liveContainer {
             return [
-                Step(title: "Save the new IPA", text: "Open the official release below. Download StreamHub-unsigned.ipa and save it in Files. Keep a copy of your existing app data before changing its container.", symbol: "arrow.down.doc.fill"),
-                Step(title: "Import in LiveContainer", text: "Open LiveContainer, use the + button, and choose the IPA from Files. Use its existing-app update or replacement option when offered; do not delete your current guest app first.", symbol: "square.and.arrow.down.fill"),
-                Step(title: "Keep the same data container", text: "Select the existing StreamHub data container when LiveContainer offers that choice. Container replacement and signing changes can affect saved data and website sessions. Preservation is not guaranteed across all versions.", symbol: "externaldrive.fill"),
-                Step(title: "Launch and check", text: "Launch StreamHub and check Settings → Updates for the new version. Confirm your watchlist and browser sessions. StreamHub’s LiveContainer and multitasking behavior still requires device testing.", symbol: "play.fill")
+                Step(title: "Open LiveContainer", text: "Open your installed LiveContainer app. The Open StreamHub Source button below can take you directly to its Sources tab when supported.", symbol: "app.fill"),
+                Step(title: "Go to Sources", text: "Tap the Sources tab in LiveContainer. Current LiveContainer releases support AltStore-compatible sources.", symbol: "list.bullet.rectangle.fill"),
+                Step(title: "Tap the + button", text: "In Sources, tap + to add a source.", symbol: "plus.circle.fill"),
+                Step(title: "Paste the StreamHub source", text: "Tap Copy Source URL below, return to LiveContainer, and paste the complete HTTPS source URL into its source field.", symbol: "doc.on.clipboard.fill"),
+                Step(title: "Confirm the source", text: "Confirm adding the source. If LiveContainer says it already exists, use the existing StreamHub source and refresh it instead.", symbol: "checkmark.seal.fill"),
+                Step(title: "Find StreamHub", text: "Expand the StreamHub source section and find StreamHub. Check the app name and newest compatible version.", symbol: "magnifyingglass"),
+                Step(title: "Tap Install", text: "Tap Install for StreamHub. LiveContainer switches to Apps and starts its installation workflow using the latest source download.", symbol: "arrow.down.circle.fill"),
+                Step(title: "Follow installation prompts", text: "Follow LiveContainer’s prompts. When updating, use its existing-app update or replacement option and retain the existing StreamHub data container when offered. Back up your data first; avoid deleting the existing app or container.", symbol: "externaldrive.fill"),
+                Step(title: "Launch the updated app", text: "Launch StreamHub and check the version in Settings → Updates. Confirm your watchlist, TMDB connection, settings, and browser sessions. Container and signing changes may affect data access; device installation has not been verified by this project.", symbol: "play.fill")
             ]
         }
         return [
@@ -41,6 +49,8 @@ struct UpdateTutorialView: View {
                     Label(steps[step].title, systemImage: steps[step].symbol).font(.title2.bold())
                     Text(steps[step].text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     actionLinks
+                    if method == .liveContainer { futureUpdates }
+                    dataPreservation
                     HStack {
                         Button("Back") { changeStep(-1) }.disabled(step == 0)
                         Spacer()
@@ -65,17 +75,61 @@ struct UpdateTutorialView: View {
     }
 
     @ViewBuilder private var actionLinks: some View {
-        if method == .liveContainer {
-            if let release = updates.available {
-                Link("Open latest release or IPA", destination: release.streamhubReleaseURL ?? release.downloadURL).buttonStyle(.bordered)
+        if let url = updates.sourceURL {
+            if method == .liveContainer {
+                Button("Open StreamHub Source in LiveContainer", action: openLiveContainerSource)
+                    .buttonStyle(.borderedProminent).tint(.red)
+                if let openMessage { Text(openMessage).font(.callout).foregroundStyle(.secondary) }
             }
-            Link("Official LiveContainer guide", destination: URL(string: "https://livecontainer.github.io/")!)
+            Button(copied ? "Source URL copied" : "Copy Source URL") {
+                UIPasteboard.general.string = url.absoluteString
+                copied = true
+            }.buttonStyle(.bordered)
+            Text(url.absoluteString).font(.caption).textSelection(.enabled)
         } else {
-            if let url = updates.sourceURL {
-                Button(copied ? "Source URL copied" : "Copy source URL") { UIPasteboard.general.url = url; copied = true }.buttonStyle(.bordered)
-                Text(url.absoluteString).font(.caption).textSelection(.enabled)
-            } else { Text("The public source is not configured in this build.").font(.caption).foregroundStyle(.secondary) }
+            Text("The public source is not configured in this build. Open the GitHub release for the IPA and installation details.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        Link("View GitHub Release", destination: updates.releasePageURL).buttonStyle(.bordered)
+        if method == .liveContainer {
+            Link("Official LiveContainer Sources guide", destination: URL(string: "https://livecontainer.github.io/docs/guides/sources")!)
+        } else {
             Link("Official SideStore guide", destination: URL(string: "https://docs.sidestore.io/")!)
+        }
+    }
+
+    private var futureUpdates: some View {
+        DisclosureGroup("For future LiveContainer updates") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("1. Open LiveContainer.")
+                Text("2. Go to Sources.")
+                Text("3. Refresh the StreamHub source using its menu (…) or swipe actions. Refresh All also reloads every source.")
+                Text("4. Select the newest StreamHub version offered by the refreshed source.")
+                Text("5. Tap Install and follow LiveContainer’s supported installation or replacement prompts for the existing app.")
+            }.font(.callout).foregroundStyle(.secondary).padding(.top, 12)
+        }
+    }
+
+    private var dataPreservation: some View {
+        DisclosureGroup("Preserve your saved data") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Back up your existing StreamHub data before updating. Keep the same app identity and use your installer’s existing-app update or replacement flow when supported.")
+                if method == .liveContainer {
+                    Text("Keep or reselect the existing StreamHub data container when LiveContainer offers that choice. Do not delete the existing guest app or data container to update it. Different containers or signing identities can make saved settings, Keychain credentials, or website sessions unavailable.")
+                    Link("LiveContainer data management", destination: URL(string: "https://livecontainer.github.io/docs/guides/data-management")!)
+                    Text("The source workflow and deep link were checked against LiveContainer 3.8.0 documentation and source code. Installation and data preservation have not been tested on a real device.")
+                }
+            }.font(.callout).foregroundStyle(.secondary).padding(.top, 12)
+        }
+    }
+
+    private func openLiveContainerSource() {
+        guard let sourceURL = updates.sourceURL,
+              let link = SourceInstallationLink.liveContainer(sourceURL: sourceURL) else { return }
+        openURL(link) { accepted in
+            openMessage = accepted
+                ? "Continue in LiveContainer and follow its prompts. If the source did not open, use Copy Source URL and the manual steps above."
+                : "LiveContainer could not be opened. Copy the source URL and follow the manual steps above, or view the GitHub release."
         }
     }
     private func changeStep(_ delta: Int) { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { step += delta } }

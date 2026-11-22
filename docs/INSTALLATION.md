@@ -1,5 +1,7 @@
 # Installation and updating
 
+Version 0.1.2 adds website-first source selection and LiveContainer source installation. Its new build and publication are pending verification; the existing published 0.1.1 download remains below until that succeeds.
+
 ## Download version 0.1.1 on iPhone
 
 Version 0.1.1 is published with the guided TMDB tutorial and a live update source.
@@ -25,11 +27,45 @@ Follow the current [official SideStore setup](https://docs.sidestore.io/docs/ins
 
 Add `https://naahs-lawragga.github.io/StreamHub-IOS/source.json` through SideStore's **Sources** interface. Refresh the source, open StreamHub, and choose its latest version. SideStore handles signing and installation. The StreamHub tutorial uses HTTPS download links and manual installer instructions. See the [official source documentation](https://docs.sidestore.io/docs/advanced/app-sources).
 
-## LiveContainer
+## LiveContainer sources
 
-Install an official LiveContainer build following its [installation guide](https://livecontainer.github.io/docs/installation). Download the IPA from a successful artifact or approved GitHub Release, save it in Files, and import it using LiveContainer's add-app flow. StreamHub itself does not require JIT or jailbreak APIs.
+Install an official LiveContainer build following its [installation guide](https://livecontainer.github.io/docs/installation). The [official Sources guide](https://livecontainer.github.io/docs/guides/sources) documents AltStore-style sources and source deep links. StreamHub uses the same public source as SideStore:
 
-For an update, back up the existing app data container first. Import the new IPA and use the host's replacement/update option for the existing app while retaining its data container. Do not delete the app or its data container to update it. Exact behavior varies with the host version; data preservation has not yet been verified on hardware. See [containers](https://livecontainer.github.io/docs/guides/containers-and-external-data) and [data management](https://livecontainer.github.io/docs/guides/data-management).
+```text
+https://naahs-lawragga.github.io/StreamHub-IOS/source.json
+```
+
+In StreamHub, choose **Settings → Updates & installation → Installation Method → LiveContainer**. **UPDATE NOW** attempts to open the source in LiveContainer with `livecontainer://source?url=<encoded_source_url>`. The entire nested HTTPS URL is percent-encoded once. If iOS cannot open the link, StreamHub shows the manual guide. **HOW TO UPDATE** opens that method’s instructions. **Copy Source URL** and **View GitHub Release** remain available as fallbacks.
+
+Add the source manually:
+
+1. Open LiveContainer.
+2. Go to the **Sources** tab.
+3. Tap **+**.
+4. Paste StreamHub’s public source URL above.
+5. Confirm the source.
+6. Find StreamHub in the source.
+7. Tap **Install**.
+8. Follow LiveContainer’s installation prompts.
+9. Launch the updated app.
+
+For future updates:
+
+1. Open LiveContainer.
+2. Go to **Sources**.
+3. Refresh the StreamHub source using its menu or refresh action.
+4. Select the newest StreamHub version offered by the source.
+5. Install it using LiveContainer’s supported workflow.
+
+Back up the existing StreamHub data container before updating. When LiveContainer offers an existing-app replacement/update choice, choose the existing StreamHub app and retain its current data container. Do not delete the app or its container first. A different container or signing identity may produce a fresh installation; data preservation depends on the host version and choices made during installation. See [containers](https://livecontainer.github.io/docs/guides/containers-and-external-data) and [data management](https://livecontainer.github.io/docs/guides/data-management).
+
+Source parsing and the deep-link handler were inspected in the current LiveContainer **3.8.0** release. This is a source-code compatibility check, not a claim that installation, data preservation, or multitasking was tested on a real device. If the source is already present, refresh the existing source instead of adding a duplicate. Manual IPA import from GitHub Releases remains available if source installation fails.
+
+## Streaming websites
+
+In movie and TV episode **Watch Now**, **Streaming Websites** appears before **Official Watch Providers**. Configured browser websites appear first, with favorites first. Add, edit, remove, or favorite websites in **Settings → Streaming Sources → Websites & authorized streams**. Selecting a website opens the built-in WKWebView browser.
+
+Enable the optional FMHY directory to browse its cached website list and favorites. FMHY’s published Markdown directory is website-discovery data; it does not verify availability for a movie or episode. A directory error does not prevent configured websites from opening. **Hide paid rentals & purchases** hides TMDB rental and purchase entries; legitimate subscription, free, and ad-supported provider metadata remains in **Official Watch Providers**.
 
 ## Connect TMDB in version 0.1.1
 

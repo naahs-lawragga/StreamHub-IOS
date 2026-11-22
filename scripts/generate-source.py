@@ -9,6 +9,7 @@ import hashlib
 import json
 import datetime
 import plistlib
+import struct
 import tempfile
 import time
 import zipfile
@@ -103,6 +104,18 @@ def verify_ipa(url, size, digest, version):
         return inspect_ipa(file, version)
 
 
+def png_dimensions(path):
+    """Read the actual CI screenshot dimensions without adding an image dependency."""
+    with Path(path).open('rb') as file:
+        header = file.read(24)
+    if len(header) != 24 or header[:8] != b'\x89PNG\r\n\x1a\n' or header[12:16] != b'IHDR':
+        raise ValueError('Source screenshot must be a PNG with an IHDR header')
+    width, height = struct.unpack('>II', header[16:24])
+    if not 0 < width <= 16384 or not 0 < height <= 16384:
+        raise ValueError('Invalid source screenshot dimensions')
+    return width, height
+
+
 def validate_source(source):
     assert source['name'] and isinstance(source['apps'], list)
     for app in source['apps']:
@@ -111,6 +124,18 @@ def validate_source(source):
         https(app['iconURL'])
         assert app['appPermissions'] == {'entitlements': [], 'privacy': {}}
         assert app['versions'], 'Published app must have a release'
+        screenshot_urls = []
+        for screenshot in app.get('screenshots', []):
+            if isinstance(screenshot, str):
+                screenshot_urls.append(https(screenshot))
+            else:
+                screenshot_urls.append(https(screenshot['imageURL']))
+                if 'width' in screenshot or 'height' in screenshot:
+                    assert isinstance(screenshot['width'], int) and screenshot['width'] > 0
+                    assert isinstance(screenshot['height'], int) and screenshot['height'] > 0
+        if 'screenshotURLs' in app:
+            assert app['screenshotURLs'] == screenshot_urls, 'LiveContainer screenshot alias differs'
+
         seen = set()
         for version in app['versions']:
             assert VERSION.fullmatch(version['version'])
@@ -118,12 +143,14 @@ def validate_source(source):
             seen.add(version['version'])
             assert isinstance(version['size'], int) and version['size'] > 0
             assert re.fullmatch(r'[0-9]+(?:\.[0-9]+){0,2}', version['buildVersion'])
+            if 'buildNumber' in version:
+                assert version['buildNumber'] == version['buildVersion'], 'LiveContainer build alias differs'
             assert re.fullmatch('[0-9a-f]{64}', version['sha256'])
             https(version['downloadURL'])
             https(version['streamhubReleaseURL'])
 
 
-def generate(releases, repository, pages_url, verify=True):
+def generate(releases, repository, pages_url, verify=True, screenshot_dimensions=None):
     if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
         raise ValueError('Repository must be owner/name')
     pages_url = https(pages_url).rstrip('/')
@@ -159,11 +186,16 @@ def generate(releases, repository, pages_url, verify=True):
             'localizedDescription': release.get('body') or 'See the GitHub release for changes.',
             'downloadURL': ipa['browser_download_url'], 'size': ipa['size'],
             **ipa_metadata, 'sha256': digest,
+            # LiveContainer 3.8.0 decodes this legacy name; AltSource uses buildVersion.
+            'buildNumber': ipa_metadata['buildVersion'],
             'streamhubReleaseURL': f'https://github.com/{repository}/releases/tag/{release["tag_name"]}'
         })
     if not versions:
         raise ValueError('No verified stable IPA exists; source publication refused')
     versions.sort(key=lambda item: tuple(map(int, item['version'].split('.'))), reverse=True)
+    screenshot = {'imageURL': pages_url + '/screenshots/setup.png'}
+    if screenshot_dimensions is not None:
+        screenshot['width'], screenshot['height'] = screenshot_dimensions
     source = {
         'name': 'StreamHub', 'identifier': 'com.streamhub.source',
         'subtitle': 'Movie and television discovery',
@@ -177,7 +209,9 @@ def generate(releases, repository, pages_url, verify=True):
             'localizedDescription': 'Discover movies and television, save a watchlist, browse supported websites, and play compatible authorized streams. Requires your own TMDB token for catalog data.',
             'iconURL': pages_url + '/icon.png', 'tintColor': '#EF233C',
             'category': 'entertainment',
-            'screenshots': [pages_url + '/screenshots/setup.png'],
+            'screenshots': [screenshot],
+            # LiveContainer 3.8.0 reads screenshotURLs rather than canonical screenshots.
+            'screenshotURLs': [screenshot['imageURL']],
             'versions': versions,
             'appPermissions': {'entitlements': [], 'privacy': {}}
         }], 'news': []
@@ -192,11 +226,12 @@ def main():
     parser.add_argument('--repository', required=True)
     parser.add_argument('--pages-url', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--screenshot', default='build/screenshots/setup.png')
     args = parser.parse_args()
     data = json.loads(Path(args.releases).read_text())
     # gh --paginate --slurp yields one array per response page.
     releases = [release for page in data for release in page] if data and isinstance(data[0], list) else data
-    result = generate(releases, args.repository, args.pages_url)
+    result = generate(releases, args.repository, args.pages_url, screenshot_dimensions=png_dimensions(args.screenshot))
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2) + '\n')

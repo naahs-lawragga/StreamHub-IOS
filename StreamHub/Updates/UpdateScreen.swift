@@ -10,6 +10,8 @@ struct UpdateScreen: View {
     @State private var tutorialMethod: InstallationMethod?
     @State private var askMethod = false
     @State private var appeared = false
+    @State private var choosingForUpdate = false
+    @State private var copiedSource = false
 
     var body: some View {
         ZStack {
@@ -47,9 +49,16 @@ struct UpdateScreen: View {
                         Button(action: beginUpdate) {
                             Label("UPDATE NOW", systemImage: "arrow.down.circle.fill").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 8)
                         }.buttonStyle(.borderedProminent).tint(.red)
-                        Button("HOW TO UPDATE") { tutorialMethod = InstallationMethod(rawValue: method) == .liveContainer ? .liveContainer : .sideStore }
+                        Button("HOW TO UPDATE", action: showInstructions)
                             .buttonStyle(.bordered).frame(maxWidth: .infinity)
-                        Button("Remind me later") { updates.dismissCurrent() }.frame(maxWidth: .infinity).foregroundStyle(.secondary)
+                        Button("REMIND ME LATER") { updates.dismissCurrent() }.frame(maxWidth: .infinity).foregroundStyle(.secondary)
+                        if let sourceURL = updates.sourceURL {
+                            Button(copiedSource ? "Source URL copied" : "Copy Source URL") {
+                                UIPasteboard.general.string = sourceURL.absoluteString
+                                copiedSource = true
+                            }
+                        }
+                        Link("View GitHub Release", destination: updates.releasePageURL)
                         Text("Installation is handled by your chosen app. StreamHub never asks for your Apple Account password.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }.padding(28).frame(maxWidth: 620).frame(maxWidth: .infinity)
@@ -62,7 +71,9 @@ struct UpdateScreen: View {
         .onAppear { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) { appeared = true } }
         .confirmationDialog("Choose your installation method", isPresented: $askMethod, titleVisibility: .visible) {
             Button("SideStore") { tutorialMethod = .sideStore }
-            Button("LiveContainer") { openLiveContainerDownload() }
+            Button("LiveContainer") {
+                if choosingForUpdate { openLiveContainerSource() } else { tutorialMethod = .liveContainer }
+            }
         }
         .sheet(item: $tutorialMethod) { method in UpdateTutorialView(method: method).environmentObject(updates) }
     }
@@ -73,13 +84,28 @@ struct UpdateScreen: View {
     private func beginUpdate() {
         switch InstallationMethod(rawValue: method) ?? .ask {
         case .sideStore: tutorialMethod = .sideStore
-        case .liveContainer: openLiveContainerDownload()
-        case .ask: askMethod = true
+        case .liveContainer: openLiveContainerSource()
+        case .ask: choosingForUpdate = true; askMethod = true
         }
     }
-    private func openLiveContainerDownload() {
-        tutorialMethod = .liveContainer
-        if let release = updates.available { openURL(release.streamhubReleaseURL ?? release.downloadURL) }
+    private func showInstructions() {
+        switch InstallationMethod(rawValue: method) ?? .ask {
+        case .sideStore: tutorialMethod = .sideStore
+        case .liveContainer: tutorialMethod = .liveContainer
+        case .ask: choosingForUpdate = false; askMethod = true
+        }
+    }
+    private func openLiveContainerSource() {
+        guard let sourceURL = updates.sourceURL,
+              let link = SourceInstallationLink.liveContainer(sourceURL: sourceURL) else {
+            tutorialMethod = .liveContainer
+            return
+        }
+        // A successful handoff does not establish that LiveContainer imported or
+        // installed the source. Its own prompts remain authoritative.
+        openURL(link) { accepted in
+            if !accepted { tutorialMethod = .liveContainer }
+        }
     }
 }
 

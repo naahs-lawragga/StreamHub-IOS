@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage("watchRegion") private var region = "US"
     @AppStorage("defaultPlaybackSpeed") private var speed = 1.0
     @AppStorage("resumePlayback") private var resume = true
+    @AppStorage("hidePaidRentals") private var hidePaidRentals = false
     @State private var token = ""
     @State private var notice: String?
     @State private var clearHistory = false
@@ -31,6 +32,8 @@ struct SettingsView: View {
                 Text("Audio, subtitles, Picture in Picture, and fullscreen controls appear when supported by the stream and system.").font(.caption).foregroundStyle(.secondary)
             }
             Section("Streaming Sources") {
+                Toggle("Hide paid rentals & purchases", isOn: $hidePaidRentals)
+                Text("Watch Now keeps subscription and free provider listings in Official Watch Providers. Your browser websites always appear first.").font(.caption).foregroundStyle(.secondary)
                 NavigationLink { SourceManagerView() } label: { Label("Websites & authorized streams", systemImage: "play.rectangle") }
             }
             Section("Browser") {

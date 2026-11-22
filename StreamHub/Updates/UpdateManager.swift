@@ -17,6 +17,9 @@ final class UpdateManager: ObservableObject {
     @Published private(set) var lastSuccessfulCheck: Date?
     let installedVersion: String
     let sourceURL: URL?
+    var releasePageURL: URL {
+        available?.streamhubReleaseURL ?? URL(string: "https://github.com/naahs-lawragga/StreamHub-IOS/releases/latest")!
+    }
     private let defaults: UserDefaults
     private let client = UpdateClient()
     private let osVersion: String

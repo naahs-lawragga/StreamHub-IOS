@@ -22,6 +22,12 @@ final class BrowserData: ObservableObject {
     static let shared = BrowserData()
     @Published private(set) var bookmarks: [BrowserEntry]
     @Published private(set) var history: [BrowserEntry]
+    @Published private(set) var favoriteWebsiteIDs: Set<UUID>
+    var sortedWebsites: [BrowserEntry] {
+        // Keep the existing order within each group so navigation does not shuffle saved sites.
+        bookmarks.filter { favoriteWebsiteIDs.contains($0.id) }
+            + bookmarks.filter { !favoriteWebsiteIDs.contains($0.id) }
+    }
     var lastURL: URL? { defaults.string(forKey: "browser.lastURL").flatMap(WebAddress.parse) }
     private let defaults: UserDefaults
 
@@ -29,6 +35,15 @@ final class BrowserData: ObservableObject {
         self.defaults = defaults
         bookmarks = Self.read("browser.bookmarks", defaults: defaults)
         history = Self.read("browser.history", defaults: defaults)
+        if let data = defaults.data(forKey: "browser.favoriteWebsiteIDs"),
+           let saved = try? JSONDecoder().decode(Set<UUID>.self, from: data) {
+            favoriteWebsiteIDs = saved.intersection(Set(bookmarks.map(\.id)))
+        } else {
+            // Existing bookmarks were previously presented as favorite websites.
+            // Store their favorites separately; do not rewrite the legacy bookmark records.
+            favoriteWebsiteIDs = Set(bookmarks.map(\.id))
+            saveWebsiteFavorites()
+        }
     }
 
     private static func read(_ key: String, defaults: UserDefaults) -> [BrowserEntry] {
@@ -47,17 +62,57 @@ final class BrowserData: ObservableObject {
 
     func toggleBookmark(title: String, url: URL) {
         guard WebAddress.isWebURL(url) else { return }
-        if bookmarks.contains(where: { $0.url == url }) {
-            bookmarks.removeAll { $0.url == url }
+        if let bookmark = bookmarks.first(where: { $0.url == url }) {
+            removeBookmark(bookmark.id)
         } else {
-            bookmarks.insert(BrowserEntry(title: title, url: url), at: 0)
+            _ = addWebsite(title: title.isEmpty ? (url.host ?? "Website") : title, url: url, isFavorite: true)
         }
+    }
+
+    @discardableResult
+    func addWebsite(title: String, url: URL, isFavorite: Bool = false) -> Bool {
+        let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, WebAddress.isWebURL(url), !bookmarks.contains(where: { $0.url == url }) else { return false }
+        let entry = BrowserEntry(title: name, url: url)
+        bookmarks.insert(entry, at: 0)
+        if isFavorite { favoriteWebsiteIDs.insert(entry.id) }
         save(bookmarks, key: "browser.bookmarks")
+        saveWebsiteFavorites()
+        return true
+    }
+
+    @discardableResult
+    func updateWebsite(_ id: UUID, title: String, url: URL) -> Bool {
+        let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, WebAddress.isWebURL(url),
+              !bookmarks.contains(where: { $0.id != id && $0.url == url }),
+              let index = bookmarks.firstIndex(where: { $0.id == id }) else { return false }
+        // Preserve the record's UUID, original date, and favorite state when editing.
+        bookmarks[index].title = name
+        bookmarks[index].url = url
+        save(bookmarks, key: "browser.bookmarks")
+        return true
+    }
+
+    func isFavoriteWebsite(_ id: UUID) -> Bool { favoriteWebsiteIDs.contains(id) }
+
+    func toggleWebsiteFavorite(_ id: UUID) {
+        guard bookmarks.contains(where: { $0.id == id }) else { return }
+        if !favoriteWebsiteIDs.insert(id).inserted { favoriteWebsiteIDs.remove(id) }
+        saveWebsiteFavorites()
     }
 
     func removeBookmark(_ id: UUID) {
         bookmarks.removeAll { $0.id == id }
+        favoriteWebsiteIDs.remove(id)
         save(bookmarks, key: "browser.bookmarks")
+        saveWebsiteFavorites()
+    }
+
+    private func saveWebsiteFavorites() {
+        if let data = try? JSONEncoder().encode(favoriteWebsiteIDs) {
+            defaults.set(data, forKey: "browser.favoriteWebsiteIDs")
+        }
     }
 
     func clearHistory() {

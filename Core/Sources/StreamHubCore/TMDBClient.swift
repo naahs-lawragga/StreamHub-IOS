@@ -56,9 +56,9 @@ public actor TMDBClient {
         let response: ProviderPayload = try await request(path: title.key + "/watch/providers", maximumAge: 60 * 60)
         guard let local = response.results[region], let link = local.link, link.scheme == "https", link.host == "www.themoviedb.org" || link.host == "themoviedb.org" else { return [] }
         var result: [WatchProvider] = []
-        var seen = Set<Int>()
+        var seen = Set<String>()
         for (label, providers) in [("Subscription", local.flatrate), ("Free", local.free), ("With ads", local.ads), ("Rent", local.rent), ("Buy", local.buy)] {
-            for provider in providers ?? [] where seen.insert(provider.id).inserted {
+            for provider in providers ?? [] where seen.insert("\(label)-\(provider.id)").inserted {
                 result.append(WatchProvider(id: provider.id, name: provider.name, logoURL: MediaTitle.imageURL(provider.logoPath, size: "w92"), url: link, category: label, region: region))
             }
         }

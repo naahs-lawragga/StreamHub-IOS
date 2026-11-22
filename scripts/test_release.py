@@ -2,6 +2,8 @@ import io
 import hashlib
 import plistlib
 import zipfile
+import tempfile
+import struct
 from unittest.mock import patch
 import importlib.util
 import unittest
@@ -31,6 +33,31 @@ class SourceTests(unittest.TestCase):
         data = self.generate([self.release('v1.2.0'), self.release('v1.10.0')])
         self.assertEqual([v['version'] for v in data['apps'][0]['versions']], ['1.10.0', '1.2.0'])
         self.assertTrue(all(v['buildVersion'] == '1' for v in data['apps'][0]['versions']))
+
+    def test_livecontainer_legacy_aliases_match_canonical_fields(self):
+        data = source.generate([self.release('v0.1.2'), self.release('v0.1.1')],
+                               'example/StreamHub-iOS', 'https://example.github.io/StreamHub-iOS',
+                               verify=False, screenshot_dimensions=(1206, 2622))
+        app = data['apps'][0]
+        self.assertEqual(app['screenshotURLs'], [s['imageURL'] for s in app['screenshots']])
+        self.assertEqual(app['screenshots'][0]['width'], 1206)
+        self.assertEqual(app['screenshots'][0]['height'], 2622)
+        for version in app['versions']:
+            self.assertEqual(version['buildNumber'], version['buildVersion'])
+            self.assertIsInstance(version['buildNumber'], str)
+        app['versions'][0]['buildNumber'] = 'different'
+        with self.assertRaises(AssertionError):
+            source.validate_source(data)
+
+    def test_png_dimensions_read_from_actual_header(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'screenshot.png'
+            path.write_bytes(b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + struct.pack('>II', 1206, 2622))
+            self.assertEqual(source.png_dimensions(path), (1206, 2622))
+            for bad in (b'not an image', b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + struct.pack('>II', 0, 2622)):
+                path.write_bytes(bad)
+                with self.assertRaises(ValueError):
+                    source.png_dimensions(path)
 
     def test_draft_and_prerelease_excluded(self):
         for flag in ('draft', 'prerelease'):

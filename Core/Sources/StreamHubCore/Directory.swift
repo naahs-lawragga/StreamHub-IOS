@@ -9,6 +9,12 @@ public struct DirectoryEntry: Codable, Identifiable, Hashable, Sendable {
     public let name: String
     public let url: URL
     public let category: String
+
+    public init(name: String, url: URL, category: String) {
+        self.name = name
+        self.url = url
+        self.category = category
+    }
 }
 public enum DirectoryParser {
     public static func parse(_ markdown: String) -> [DirectoryEntry] {

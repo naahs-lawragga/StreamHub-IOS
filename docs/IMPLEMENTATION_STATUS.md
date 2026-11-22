@@ -1,5 +1,7 @@
 # Implementation and verification status
 
+Version **0.1.2** changes are implemented and pending a fresh CI build: website-first source selection, website editing/favorites, shared FMHY directory state, rental/purchase filtering, and LiveContainer source installation/deep-link tutorials. The confirmed release evidence below still applies to 0.1.1 until publication is verified.
+
 Published early development release: **0.1.1**, with guided TMDB setup and a live public update source. The release build and Pages deployment passed their checks on 2026-10-26. This does not establish physical-device compatibility or 1.0 readiness.
 
 ## Implemented
@@ -10,11 +12,12 @@ Published early development release: **0.1.1**, with guided TMDB setup and a liv
 - Version 0.1.1 adds **Settings → TMDB connection → Set up TMDB step by step**, with five guided steps, copyable application details, read access token instructions, and iPhone troubleshooting.
 - Atomic local watchlist, recent/search histories, episode selection, native playback progress, and resume. Websites do not generate fictional playback progress.
 - Optional FMHY Markdown directory, categories, search, favorites, manual refresh and cached fallback, with explicit unverified-website labels.
-- Provider protocol and bounded concurrent provider checks; TMDB/JustWatch title-level viewing guide, custom websites, and user-supplied authorized HTTPS streams.
+- Provider protocol and bounded concurrent provider checks; separate **Streaming Websites** and **Official Watch Providers**, configured websites and favorites first, optional directory browsing, rental/purchase hiding, TMDB/JustWatch title-level viewing guide, and user-supplied authorized HTTPS streams. Website destinations carry explicit unverified labels and do not assert title availability.
 - WKWebView address/navigation/loading/error UI, bookmarks/history, persistent cookies, last-page restoration, external-link confirmation, and web-process recovery.
 - AVPlayer/AVPlayerViewController native playback, seeking, skip controls, playback speed, supported audio/subtitle/PiP controls, resume, source switching, buffering/error recovery, and interruption handling.
 - Validated AltSource update parsing, semantic version comparison, compatible OS filtering, six-hour active-use checks, offline cached state, dismissal persistence, fullscreen update advisory, installer preference, and SideStore/LiveContainer tutorials.
-- Generated Xcode project specification, macOS CI build/test/unsigned IPA packaging, original icon/logo/social preview, and release/source automation scripts.
+- LiveContainer source tutorial with nine installation steps, future-update instructions, data-container guidance, correctly encoded source deep links, open-failure fallback, source copying, and GitHub release links. **HOW TO UPDATE** follows the selected installation method.
+- Generated Xcode project specification, macOS CI build/test/unsigned IPA packaging, original icon/logo/social preview, and release/source automation scripts. The shared source retains canonical AltSource metadata and adds matching legacy display aliases for LiveContainer 3.8.0.
 
 ## Verification evidence
 
@@ -30,7 +33,7 @@ Published early development release: **0.1.1**, with guided TMDB setup and a liv
 ## Pending evidence / limitations
 
 - No live TMDB request was tested with a user credential. The credential must be entered on-device in Settings.
-- No iPhone 17, SideStore, LiveContainer, multitasking/window-resizing, PiP, or ProMotion hardware test has been performed. Use the documented device checklist.
+- No iPhone 17, SideStore, LiveContainer, multitasking/window-resizing, PiP, or ProMotion hardware test has been performed. LiveContainer 3.8.0 source parser and deep-link handler were inspected in its released code; that does not establish device installation. Use the documented device checklist.
 - Website compatibility depends on each site's security, authentication, video, and DRM policies; progress is only tracked for native playback.
 - TMDB provider metadata is title-level reported availability, not episode-level or subscription verification. Custom streams are associated with titles by the user.
 - Version 0.1.1 embeds the live `https://naahs-lawragga.github.io/StreamHub-IOS/source.json`. Update-screen and installation behavior still need on-device validation. The original 0.1.0 development IPA has no configured source URL and requires manual updating.

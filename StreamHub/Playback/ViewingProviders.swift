@@ -21,6 +21,12 @@ struct ViewingOption: Identifiable, Sendable {
     let url: URL
     let method: ViewingMethod
     let evidence: ViewingEvidence
+    var category: String? = nil
+
+    var isPaidRentalOrPurchase: Bool {
+        let normalized = category?.lowercased()
+        return normalized == "rent" || normalized == "buy"
+    }
 }
 
 protocol ViewingProvider: Sendable {
@@ -36,9 +42,71 @@ struct TMDBViewingProvider: ViewingProvider {
         let providers = try await client.watchProviders(for: request.title, region: request.region)
         return providers.map { provider in
             ViewingOption(id: "tmdb-\(provider.id)-\(provider.category)", name: provider.name,
-                detail: "\(provider.category.capitalized) · \(provider.region) · Open TMDB viewing guide",
-                url: provider.url, method: .browser, evidence: .metadataReported)
+                detail: "\(Self.categoryLabel(provider.category)) · \(provider.region) · Open TMDB viewing guide",
+                url: provider.url, method: .browser, evidence: .metadataReported, category: provider.category)
         }
+    }
+
+    private static func categoryLabel(_ category: String) -> String {
+        switch category.lowercased() {
+        case "flatrate", "subscription": return "Subscription"
+        case "rent": return "Rental"
+        case "buy": return "Purchase"
+        case "free": return "Free"
+        case "ads", "with ads": return "With ads"
+        default: return category.capitalized
+        }
+    }
+}
+
+/// A website is a browser destination. No title matching or availability is inferred.
+struct StreamingWebsiteOption: Identifiable {
+    var id: String { url.absoluteString }
+    let name: String
+    let url: URL
+    let isFavorite: Bool
+    let isConfigured: Bool
+}
+
+/// The same selection model serves movies, shows, and individual episode requests.
+struct SourceSelection {
+    let request: ViewingRequest
+    let websites: [StreamingWebsiteOption]
+    let officialOptions: [ViewingOption]
+    let directoryWebsiteCount: Int
+
+    init(request: ViewingRequest, configured: [BrowserEntry], configuredFavorites: Set<UUID>,
+         directoryEntries: [DirectoryEntry], directoryFavorites: Set<String>, directoryEnabled: Bool,
+         officialOptions: [ViewingOption], hidePaidRentals: Bool, directoryLimit: Int = 12) {
+        self.request = request
+        let configuredSorted = configured.enumerated().sorted {
+            let lhs = configuredFavorites.contains($0.element.id)
+            let rhs = configuredFavorites.contains($1.element.id)
+            return lhs != rhs ? lhs : $0.offset < $1.offset
+        }.map(\.element)
+        var seen = Set<String>()
+        var destinations: [StreamingWebsiteOption] = []
+        for website in configuredSorted where WebAddress.isWebURL(website.url) {
+            guard seen.insert(website.url.absoluteString).inserted else { continue }
+            destinations.append(StreamingWebsiteOption(name: website.title, url: website.url,
+                isFavorite: configuredFavorites.contains(website.id), isConfigured: true))
+        }
+        var directoryOptions: [StreamingWebsiteOption] = []
+        if directoryEnabled {
+            let sorted = directoryEntries.enumerated().sorted {
+                let lhs = directoryFavorites.contains($0.element.id)
+                let rhs = directoryFavorites.contains($1.element.id)
+                return lhs != rhs ? lhs : $0.offset < $1.offset
+            }.map(\.element)
+            for entry in sorted where WebAddress.isWebURL(entry.url) {
+                guard seen.insert(entry.url.absoluteString).inserted else { continue }
+                directoryOptions.append(StreamingWebsiteOption(name: entry.name, url: entry.url,
+                    isFavorite: directoryFavorites.contains(entry.id), isConfigured: false))
+            }
+        }
+        directoryWebsiteCount = directoryOptions.count
+        websites = destinations + directoryOptions.prefix(max(0, directoryLimit))
+        self.officialOptions = officialOptions.filter { !hidePaidRentals || !$0.isPaidRentalOrPurchase }
     }
 }
 

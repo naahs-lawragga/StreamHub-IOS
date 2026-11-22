@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2 — 2026-11-22
+
+- Put configured streaming websites and the optional FMHY directory first in Watch Now for movies and TV episodes, with explicit unverified browser destination labels.
+- Separate official watch providers and add an option to hide paid rentals and purchases while retaining subscription listings.
+- Add website editing, favorites, and removal while preserving existing bookmarks, settings, watchlist storage, and TMDB credentials.
+- Add LiveContainer source installation and update instructions, a correctly encoded source deep link, manual fallback, copy-source and release links.
+- Extend source metadata compatibility for LiveContainer while retaining the official AltSource fields and verified IPA checks.
+
+Early development release. LiveContainer installation and data-container retention require physical-device testing.
+
 ## 0.1.1 — 2026-10-26
 
 - Add an in-app, step-by-step TMDB setup tutorial with the exact application form values, copy buttons, token guidance, and iPhone troubleshooting.
