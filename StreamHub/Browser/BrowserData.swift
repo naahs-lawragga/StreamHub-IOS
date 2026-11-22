@@ -33,15 +33,16 @@ final class BrowserData: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        bookmarks = Self.read("browser.bookmarks", defaults: defaults)
+        let existingBookmarks = Self.read("browser.bookmarks", defaults: defaults)
+        bookmarks = existingBookmarks
         history = Self.read("browser.history", defaults: defaults)
         if let data = defaults.data(forKey: "browser.favoriteWebsiteIDs"),
            let saved = try? JSONDecoder().decode(Set<UUID>.self, from: data) {
-            favoriteWebsiteIDs = saved.intersection(Set(bookmarks.map(\.id)))
+            favoriteWebsiteIDs = saved.intersection(Set(existingBookmarks.map(\.id)))
         } else {
             // Existing bookmarks were previously presented as favorite websites.
             // Store their favorites separately; do not rewrite the legacy bookmark records.
-            favoriteWebsiteIDs = Set(bookmarks.map(\.id))
+            favoriteWebsiteIDs = Set(existingBookmarks.map(\.id))
             saveWebsiteFavorites()
         }
     }
