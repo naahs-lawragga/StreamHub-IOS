@@ -1,12 +1,12 @@
 # Installation and updating
 
-Version 0.1.2 adds website-first source selection and LiveContainer source installation. Its new build and publication are pending verification; the existing published 0.1.1 download remains below until that succeeds.
+Version 0.1.2 is published with website-first source selection and LiveContainer source installation. Its main build, release tests, Pages deployment, and public-download verification passed.
 
-## Download version 0.1.1 on iPhone
+## Download version 0.1.2 on iPhone
 
-Version 0.1.1 is published with the guided TMDB tutorial and a live update source.
+Version 0.1.2 includes the existing guided TMDB tutorial and a live shared update source.
 
-1. In Safari, [download the unsigned IPA](https://github.com/naahs-lawragga/StreamHub-IOS/releases/download/v0.1.1/StreamHub-unsigned.ipa) and save it in Files. The [release page](https://github.com/naahs-lawragga/StreamHub-IOS/releases/tag/v0.1.1) also includes release notes and the SHA-256 checksum.
+1. In Safari, [download the unsigned IPA](https://github.com/naahs-lawragga/StreamHub-IOS/releases/download/v0.1.2/StreamHub-unsigned.ipa) and save it in Files. The [release page](https://github.com/naahs-lawragga/StreamHub-IOS/releases/tag/v0.1.2) also includes release notes and the SHA-256 checksum.
 2. Import or sign the IPA with SideStore or LiveContainer as described below. Safari cannot install an unsigned IPA directly.
 3. For SideStore source-based updates, add `https://naahs-lawragga.github.io/StreamHub-IOS/source.json` in Sources.
 
@@ -18,7 +18,7 @@ See the [build report](BUILD_REPORT.md) for verified size, checksum, and CI evid
 2. Open a successful **Build unsigned IPA** run. Scroll to **Artifacts** and download `StreamHub-unsigned-<commit>`.
 3. Open **Files → Downloads**, then tap the downloaded ZIP to extract it.
 4. Import `StreamHub-unsigned.ipa` into SideStore or LiveContainer using the instructions below. Safari cannot install an unsigned IPA directly.
-5. Keep the included SHA-256 checksum alongside the IPA. Main-branch workflow artifacts expire after 30 days. The published 0.1.1 release has the separate public download link above.
+5. Keep the included SHA-256 checksum alongside the IPA. Main-branch workflow artifacts expire after 30 days. The published 0.1.2 release has the separate public download link above.
 
 
 ## SideStore
@@ -67,7 +67,7 @@ In movie and TV episode **Watch Now**, **Streaming Websites** appears before **O
 
 Enable the optional FMHY directory to browse its cached website list and favorites. FMHY’s published Markdown directory is website-discovery data; it does not verify availability for a movie or episode. A directory error does not prevent configured websites from opening. **Hide paid rentals & purchases** hides TMDB rental and purchase entries; legitimate subscription, free, and ad-supported provider metadata remains in **Official Watch Providers**.
 
-## Connect TMDB in version 0.1.1
+## Connect TMDB
 
 1. Open **Settings → TMDB connection → Set up TMDB step by step**.
 2. Follow the guide to sign in to TMDB, request API access when needed, and complete the application form using the copyable project details. Use your own accurate contact information.
@@ -79,7 +79,7 @@ If the API registration form is difficult to use on iPhone, follow the tutorial�
 
 ## Update checks
 
-Version 0.1.1 is configured to check the source above while the app is in use. Open **Settings → Updates & installation** to check manually or select SideStore, LiveContainer, or Ask Every Time. The live source currently offers 0.1.1; an installed 0.1.1 app should not show an update until a newer version is published. The original 0.1.0 development IPA has no configured update source and needs a manual IPA update.
+Versions 0.1.1 and later check the source above while the app is in use. Open **Settings → Updates & installation** to check manually or select SideStore, LiveContainer, or Ask Every Time. The live source offers 0.1.2 and retains 0.1.1. An installed 0.1.1 app can detect the 0.1.2 update; an installed 0.1.2 app should not show another update until a newer version is published. The original 0.1.0 development IPA has no configured update source and needs a manual IPA update.
 
 ## Multitasking
 

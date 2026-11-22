@@ -1,8 +1,6 @@
 # Implementation and verification status
 
-Version **0.1.2** changes are implemented and pending a fresh CI build: website-first source selection, website editing/favorites, shared FMHY directory state, rental/purchase filtering, and LiveContainer source installation/deep-link tutorials. The confirmed release evidence below still applies to 0.1.1 until publication is verified.
-
-Published early development release: **0.1.1**, with guided TMDB setup and a live public update source. The release build and Pages deployment passed their checks on 2026-10-26. This does not establish physical-device compatibility or 1.0 readiness.
+Published early development release: **0.1.2**, with website-first source selection, website editing/favorites, shared FMHY directory state, rental/purchase filtering, and LiveContainer source installation/deep-link tutorials. The release build passed 68 tests, and the Pages source deployment plus independent public-download checks passed on 2026-11-22. This does not establish physical-device compatibility or 1.0 readiness.
 
 ## Implemented
 
@@ -21,14 +19,13 @@ Published early development release: **0.1.1**, with guided TMDB setup and a liv
 
 ## Verification evidence
 
-- Swift 6.0.3 Linux compiled the Foundation-only StreamHubCore package.
-- **31 package tests passed**: metadata/network/search/cache/provider handling, persistence, directory parsing, versions/update metadata/dismissal/offline behavior.
-- **11 Python release-tool tests passed locally and in the 0.1.1 release workflow**: semantic ordering, publication exclusions, asset identity, downloaded IPA metadata, checksums, sizes, and HTTPS policy.
-- The 0.1.1 Xcode 26.3 simulator tests and Release iPhoneOS build passed in [release run 40386876850](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40386876850); 31 core tests and 8 hosted iOS tests passed.
-- [Pages run 40388969253](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/40388969253) deployed the verified source and checked the hosted JSON, IPA download, and artwork.
-- The public 0.1.1 IPA checksum, ZIP integrity, bundle identity/version/source URL, device platform, and Mach-O executable were independently verified. The hosted source, icon, and screenshot were also retrieved successfully.
-- Info.plist and asset-catalog JSON parsed successfully.
-- Browser and playback hosted XCTest tests passed on the simulator.
+- **37 Swift package tests passed in the 0.1.2 release:** metadata/network/search/cache/provider handling, persistence, directory parsing/cache/offline fallback, versions/update metadata/dismissal/offline behavior, and percent-encoded LiveContainer source links.
+- **18 hosted iOS simulator tests passed:** existing browser/playback checks plus website CRUD/favorites, legacy saved-record and unrelated-setting preservation, configured/directory website ordering, movie/TV episode request context, rental/purchase filtering, and persisted directory favorites.
+- **13 Python release-tool tests passed:** semantic ordering, publication exclusions, asset identity, downloaded IPA metadata, checksums, sizes, HTTPS policy, matching LiveContainer aliases, and actual PNG dimensions.
+- Main [run 45011619856](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/45011619856) and tagged [release run 45012459729](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/45012459729) passed Xcode 26.3 simulator tests and Release iPhoneOS builds.
+- [Pages run 45013311742](https://github.com/naahs-lawragga/StreamHub-IOS/actions/runs/45013311742) deployed the verified source and checked hosted JSON and artwork.
+- Both listed public IPA downloads were independently verified. Latest 0.1.2: 1,385,449 bytes, SHA-256 `49efb4c5c5b3f6b80bf7cdd3129d5ad390b3abaa2e41f3b38c6edb263547cfc1`, build 3, bundle `com.streamhub.ios`, minimum iOS 17.0. ZIP integrity, source URL, device platform, Mach-O header, checksum asset, icon, and actual screenshot dimensions/aliases passed checks.
+- Info.plist and asset-catalog JSON parsed successfully. The README screenshot is an actual setup capture from the 0.1.2 build.
 
 ## Pending evidence / limitations
 
@@ -36,16 +33,17 @@ Published early development release: **0.1.1**, with guided TMDB setup and a liv
 - No iPhone 17, SideStore, LiveContainer, multitasking/window-resizing, PiP, or ProMotion hardware test has been performed. LiveContainer 3.8.0 source parser and deep-link handler were inspected in its released code; that does not establish device installation. Use the documented device checklist.
 - Website compatibility depends on each site's security, authentication, video, and DRM policies; progress is only tracked for native playback.
 - TMDB provider metadata is title-level reported availability, not episode-level or subscription verification. Custom streams are associated with titles by the user.
-- Version 0.1.1 embeds the live `https://naahs-lawragga.github.io/StreamHub-IOS/source.json`. Update-screen and installation behavior still need on-device validation. The original 0.1.0 development IPA has no configured source URL and requires manual updating.
+- Versions 0.1.1 and later embed the live `https://naahs-lawragga.github.io/StreamHub-IOS/source.json`. Update-screen and installation behavior still need on-device validation. The original 0.1.0 development IPA has no configured source URL and requires manual updating.
 - Browser cookies and last URL persist; an arbitrary website's live JavaScript state and back/forward stack are not restored across process termination.
 - The README includes a real simulator setup screenshot. Hardware performance measurements remain pending. Artwork loads from TMDB; no movie catalog screenshot was fabricated.
 - Successful release and Pages workflows establish publication, not device compatibility. Physical-device checks remain outstanding.
 
-## Repository / build handoff (2026-10-26)
+## Repository / build handoff (2026-11-22)
 
 - Public repository: https://github.com/naahs-lawragga/StreamHub-IOS
 - The initial GitHub access blocker was resolved by installing the ChatGPT Codex Connector. Source and build fixes were committed and pushed under the user's authorization.
 - Verified 0.1.0 source commit: `2079344830aa7676e856109770c9aaab44d9098a`.
 - Published `v0.1.1` app-source tag: `53d8366`; successful release workflow commit: `7e0d9db`. The workflow fix retained XcodeGen’s required SettingPresets in its cached installation without moving the app-source tag.
-- [Version 0.1.1 release](https://github.com/naahs-lawragga/StreamHub-IOS/releases/tag/v0.1.1) and [Pages source](https://naahs-lawragga.github.io/StreamHub-IOS/source.json) are public and verified.
+- Published `v0.1.2` app-source tag: `5b0dcf24bbc275e16ae3e487a049129399cc37c3`. The additive favorite migration initialization was fixed before the successful main/release builds.
+- [Version 0.1.2 release](https://github.com/naahs-lawragga/StreamHub-IOS/releases/tag/v0.1.2) and [Pages source](https://naahs-lawragga.github.io/StreamHub-IOS/source.json) are public and verified. See the [complete file diff](https://github.com/naahs-lawragga/StreamHub-IOS/compare/b8077f8...v0.1.2).
 - See [BUILD_REPORT.md](BUILD_REPORT.md) for downloads and the complete nine-point delivery report.
